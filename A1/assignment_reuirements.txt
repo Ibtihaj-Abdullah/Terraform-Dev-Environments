@@ -1,0 +1,6 @@
+In this assignment, we are required to:
+-> Create an S3 bucket whcih serves as a storage for terraform state files.
+-> The bucket should also be versioning enabled.
+-> Create a DynamoDB table for state locking.
+-> Write a backend file to connect and use the S3 and the DynamoDB table
+-> We are also required to test the terraform configuration by running terraform init and the terraform apply command
