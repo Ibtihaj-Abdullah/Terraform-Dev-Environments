@@ -34,8 +34,13 @@ PROCEDURE:
   EXPLANATION:
     Line 8 provider block is specifying the provider and it's region for our terraform configuration.
     Line 12 block creates an aws S3 bucket resource named terraform-a1-bucket
-    Line 16 creates an aws dynamoDB resource with name terraform-a1-state-lock and the cost billing mode set ad pay per request which specifies that aws will only charge us when a request is made to the dynamoDB resource.
-    State lock referes to the restriction of opeartion on statefile by users or processes. This enables only one process or user to change and operate into the remote tf state file at one time.     
+    Line 16 creates an aws dynamoDB resource with name terraform-a1-state-lock and the cost billing mode set ad pay per request which specifies that aws will only charge us when a request is made to the dynamoDB resource.     
     Hash key referes to the primary key in the db. LockID is the primary key in state lock table.
     The attribute block in dynamoDB resource definition is the schema for the dynamoDB
+
+    WHAT EXACTLY STATE LOCKING MEANS AND WHY USE DYNAMODB TO ACHIEVE SO?
+      State lock referes to the restriction of opeartion on statefile by users or processes. This enables only one process or user to change and operate into the remote tf state file at one time.
+      When the state file is in use by a process, terraform writes a lockID related to the process into the dynamoDB table and waits for the process to complete to release the LockID. 
+      If another process tries to access the statefile, terraform looks if there is any LockID in the table. 
+      If so than terraform waits for LockID to be released and than give the process access to the statefile. 
     
