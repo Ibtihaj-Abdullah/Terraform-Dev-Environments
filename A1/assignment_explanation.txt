@@ -32,9 +32,10 @@ PROCEDURE:
       }
     
       EXPLANATION:
-        Line 8 provider block is specifying the provider and it's region for our terraform configuration.
-        Line 12 block creates an aws S3 bucket resource named terraform-a1-bucket
-        Line 16 creates an aws dynamoDB resource with name terraform-a1-state-lock and the cost billing mode set ad pay per request which specifies that aws will only charge us when a request is made to the dynamoDB resource.     
+        Provider block is specifying the provider and it's region for our terraform configuration.
+        Bucket resource block creates an aws S3 bucket resource named terraform-a1-bucket
+        There is another resource block which provisions a state-versioning configuration for the above s3 bucket
+        Another resource block is written for aws dynamoDB resource with name terraform-a1-state-lock and the cost billing mode set ad pay per request which specifies that aws will only charge us when a request is made to the dynamoDB resource.     
         Hash key referes to the primary key in the db. LockID is the primary key in state lock table.
         The attribute block in dynamoDB resource definition is the schema for the dynamoDB
     
@@ -58,5 +59,24 @@ PROCEDURE:
       }
   
     EXPLANATION:
-      
-    
+      Bucket name represents our S3 bucket
+      The key variable is the bucket path to store the terraform statefile
+      Region variable specifies the region for the backend configuration
+      Encryption makes sure that the credentials inside the terraform statefile are encrypted 
+      DynamoDB variable is the DynamoDB name form other file which stores LockID for state locks
+
+  The configuration si done however, if anyone wants to see the statefile, it won't be visible. TO make the statefile visible to the public, go to the AWS console and go to the terraform-a1-bucket page. 
+  Go to permissions and disable "block access for public"
+  Now go to bucker policies and add a new policy as per your needs.
+  Let's use a read only policy for public for now which is 
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+          {
+              "Effect": "Allow",
+              "Principal": "*",
+              "Action": "s3:GetObject",
+              "Resource": "arn:aws:s3:::terraform-a1-bucket/*"
+          }]
+    }
+  However, we have blocked the access since we don't want anyone looking into our infrastrucure configurations. 
