@@ -4,43 +4,59 @@ REQUIREMENTS:
 PROCEDURE:
   We first create the S3 bucket and the DynamoDB Table with the reuired settings in a main.tf file. After that, we create a backend.tf file for enabling the use of S3 and DynamoDb.  
 
-  CODE:
-    provider "aws" {
-      region = "us-west-2" 
-    }
-    
-    resource "aws_s3_bucket" "terraform_state" {
-      bucket = "terraform-a1-bucket" 
-    }
-    
-    resource "aws_s3_bucket_versioning" "terraform_state_versioning" {
-      bucket = aws_s3_bucket.terraform_state.id
-      versioning_configuration {
-        status = "Enabled"
+    CODE:
+      provider "aws" {
+        region = "us-west-2" 
       }
-    }
-    
-    resource "aws_dynamodb_table" "terraform_state_lock" {
-      name           = "terraform-a1-state-lock"
-      billing_mode   = "PAY_PER_REQUEST"
-      hash_key       = "LockID"
-    
-      attribute {
-        name = "LockID"
-        type = "S"
+      
+      resource "aws_s3_bucket" "terraform_state" {
+        bucket = "terraform-a1-bucket" 
       }
-    }
+      
+      resource "aws_s3_bucket_versioning" "terraform_state_versioning" {
+        bucket = aws_s3_bucket.terraform_state.id
+        versioning_configuration {
+          status = "Enabled"
+        }
+      }
+      
+      resource "aws_dynamodb_table" "terraform_state_lock" {
+        name           = "terraform-a1-state-lock"
+        billing_mode   = "PAY_PER_REQUEST"
+        hash_key       = "LockID"
+      
+        attribute {
+          name = "LockID"
+          type = "S"
+        }
+      }
+    
+      EXPLANATION:
+        Line 8 provider block is specifying the provider and it's region for our terraform configuration.
+        Line 12 block creates an aws S3 bucket resource named terraform-a1-bucket
+        Line 16 creates an aws dynamoDB resource with name terraform-a1-state-lock and the cost billing mode set ad pay per request which specifies that aws will only charge us when a request is made to the dynamoDB resource.     
+        Hash key referes to the primary key in the db. LockID is the primary key in state lock table.
+        The attribute block in dynamoDB resource definition is the schema for the dynamoDB
+    
+        WHAT EXACTLY STATE LOCKING MEANS AND WHY USE DYNAMODB TO ACHIEVE SO?
+          State lock referes to the restriction of operation on statefile by users or processes. This enables only one process or user to change and operate into the remote tf state file at one time.
+          When the state file is in use by a process, terraform writes a lockID related to the process into the dynamoDB table and waits for the process to complete to release the LockID. 
+          If another process tries to access the statefile, terraform looks if there is any LockID in the table. 
+          If so than terraform waits for LockID to be released and than give the process access to the statefile. 
 
-  EXPLANATION:
-    Line 8 provider block is specifying the provider and it's region for our terraform configuration.
-    Line 12 block creates an aws S3 bucket resource named terraform-a1-bucket
-    Line 16 creates an aws dynamoDB resource with name terraform-a1-state-lock and the cost billing mode set ad pay per request which specifies that aws will only charge us when a request is made to the dynamoDB resource.     
-    Hash key referes to the primary key in the db. LockID is the primary key in state lock table.
-    The attribute block in dynamoDB resource definition is the schema for the dynamoDB
+  As we have created the resources, we now need a configuration file to connect these resources to achieve statelocking for remotely stored terraform state files. We create a new terraform file named backend.tf in the same directory as main.tf file.
 
-    WHAT EXACTLY STATE LOCKING MEANS AND WHY USE DYNAMODB TO ACHIEVE SO?
-      State lock referes to the restriction of opeartion on statefile by users or processes. This enables only one process or user to change and operate into the remote tf state file at one time.
-      When the state file is in use by a process, terraform writes a lockID related to the process into the dynamoDB table and waits for the process to complete to release the LockID. 
-      If another process tries to access the statefile, terraform looks if there is any LockID in the table. 
-      If so than terraform waits for LockID to be released and than give the process access to the statefile. 
+    CODE:
+      terraform {
+        backend "s3" {
+          bucket         = "terraform-a1-bucket" 
+          key            = "tfstates/terraform.tfstate"          
+          region         = "us-west-2"                          
+          encrypt        = true                                 
+          dynamodb_table = "terraform-a1-state-lock"               
+        }
+      }
+  
+    EXPLANATION:
+      
     
