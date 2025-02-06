@@ -1,23 +1,22 @@
 variable "vpc_name" {
-  type = string
+  description = "The name of the VPC"
+  type        = string
 }
 
-variable "cidr" {
-  type = string
+variable "enable_dns_support" {
+  description = "Enable or disable DNS support in the VPC"
+  type        = bool
+  default     = true
 }
 
-variable "public_subnets" {
-  type = list(object({
-    name = string
-    cidr = string
-    az   = string
-  }))
+variable "enable_dns_hostnames" {
+  description = "Enable or disable DNS hostnames in the VPC"
+  type        = bool
+  default     = true
 }
 
-variable "private_subnets" {
-  type = list(object({
-    name = string
-    cidr = string
-    az   = string
-  }))
+variable "additional_tags" {
+  description = "Additional tags to apply to VPC resources"
+  type        = map(string)
+  default     = {}
 }
